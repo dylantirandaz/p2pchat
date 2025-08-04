@@ -15,20 +15,27 @@ func main() {
 	netw := network.NewP2PNetwork()
 	cht := chat.NewChat()
 
-	go netw.Listen(":9000", cht)
-
-	fmt.Print("Enter peer address to connect (or leave blank): ")
-	addr, err := bufio.NewReader(os.Stdin).ReadString('\n')
+	fmt.Print("Enter 'listen' or peer address to connect (or leave blank to listen): ")
+	action, err := bufio.NewReader(os.Stdin).ReadString('\n')
 	if err != nil {
 		log.Fatalf("Failed to read input: %v", err)
 	}
-	addr = addr[:len(addr)-1] 
+	action = action[:len(action)-1]
 
-	if addr != "" {
-		err := netw.Connect(addr)
+	if action == "listen" || action == "" {
+		go netw.Listen(":9000", cht)
+		fmt.Println("Listening for connections on :9000...")
+	} else {
+		err := netw.Connect(action)
 		if err != nil {
 			fmt.Println("Failed to connect:", err)
+			os.Exit(1)
 		}
+		fmt.Println("Connected to:", action)
+		netw.GetMu().Lock()
+		peer := netw.Peers[action]
+		netw.GetMu().Unlock()
+		cht.AddPeer(action, peer.Conn)
 	}
 
 	cht.StartChat(netw)

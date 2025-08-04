@@ -16,13 +16,13 @@ type Peer struct {
 type P2PNetwork struct {
 	peers map[string]*Peer
 	mu    sync.Mutex
-	Peers map[string]*Peer // Exported peers map
+	Peers map[string]*Peer 
 }
 
 func NewP2PNetwork() *P2PNetwork {
 	return &P2PNetwork{
 		peers: make(map[string]*Peer),
-		Peers: make(map[string]*Peer), // Initialize exported map
+		Peers: make(map[string]*Peer),
 	}
 }
 
@@ -33,7 +33,7 @@ func (n *P2PNetwork) Connect(addr string) error {
 	}
 
 	n.mu.Lock()
-	n.Peers[addr] = &Peer{Conn: conn, Addr: addr} // Use exported map
+	n.Peers[addr] = &Peer{Conn: conn, Addr: addr}
 	n.mu.Unlock()
 
 	fmt.Println("Connected to peer:", addr)
@@ -43,12 +43,12 @@ func (n *P2PNetwork) Connect(addr string) error {
 func (n *P2PNetwork) Broadcast(message []byte) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
-	for _, peer := range n.Peers { 
+	for _, peer := range n.Peers {
 		_, err := peer.Conn.Write(message)
 		if err != nil {
 			fmt.Println("Error writing to peer:", peer.Addr, err)
 			peer.Conn.Close()
-			delete(n.Peers, peer.Addr) 
+			delete(n.Peers, peer.Addr)
 		}
 	}
 }
@@ -73,7 +73,7 @@ func (n *P2PNetwork) Listen(addr string, cht *chat.Chat) {
 		fmt.Println("Accepted connection from:", peerAddr)
 
 		n.mu.Lock()
-		n.Peers[peerAddr] = &Peer{Conn: conn, Addr: peerAddr} 
+		n.Peers[peerAddr] = &Peer{Conn: conn, Addr: peerAddr}
 		n.mu.Unlock()
 
 		cht.AddPeer(peerAddr, conn)
@@ -87,7 +87,7 @@ func (n *P2PNetwork) Listen(addr string, cht *chat.Chat) {
 					cht.RemovePeer(addr)
 					c.Close()
 					n.mu.Lock()
-					delete(n.Peers, addr) 
+					delete(n.Peers, addr)
 					n.mu.Unlock()
 					return
 				}
@@ -95,4 +95,8 @@ func (n *P2PNetwork) Listen(addr string, cht *chat.Chat) {
 			}
 		}(conn, peerAddr)
 	}
+}
+
+func (n *P2PNetwork) GetMu() *sync.Mutex {
+	return &n.mu
 }
