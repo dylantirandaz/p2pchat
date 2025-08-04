@@ -1,25 +1,35 @@
 package main
 
 import (
-    "fmt"
-    "log"
-    "net/http"
-    "p2p-chat-app/internal/chat"
-    "p2p-chat-app/internal/network"
+	"bufio"
+	"fmt"
+	"log"
+	"os"
+	"p2p-chat-app/internal/chat"
+	"p2p-chat-app/internal/network"
 )
 
 func main() {
-    fmt.Println("Starting P2P Chat Application...")
+	fmt.Println("Starting P2P Chat Application...")
 
-    c := chat.Chat{}
-    go c.StartChat()
+	netw := network.NewP2PNetwork()
+	cht := chat.NewChat()
 
-    n := network.NewPeer()
-    go n.Connect()
+	go netw.Listen(":9000", cht)
 
-    http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-        fmt.Fprintf(w, "Welcome to the P2P Chat Application!")
-    })
+	fmt.Print("Enter peer address to connect (or leave blank): ")
+	addr, err := bufio.NewReader(os.Stdin).ReadString('\n')
+	if err != nil {
+		log.Fatalf("Failed to read input: %v", err)
+	}
+	addr = addr[:len(addr)-1] 
 
-    log.Fatal(http.ListenAndServe(":8080", nil))
+	if addr != "" {
+		err := netw.Connect(addr)
+		if err != nil {
+			fmt.Println("Failed to connect:", err)
+		}
+	}
+
+	cht.StartChat(netw)
 }
