@@ -2,5 +2,4 @@ module p2p-chat-app
 
 go 1.18
 
-require (
-)
+require github.com/gorilla/websocket v1.5.0

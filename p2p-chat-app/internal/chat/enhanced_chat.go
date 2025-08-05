@@ -138,6 +138,21 @@ func (ec *EnhancedChat) JoinRoom(roomName string) {
 	ec.displayRecentMessages(roomName)
 }
 
+func (ec *EnhancedChat) GetRooms() []string {
+	ec.mu.RLock()
+	defer ec.mu.RUnlock()
+	
+	var rooms []string
+	for room := range ec.rooms {
+		rooms = append(rooms, room)
+	}
+	return rooms
+}
+
+func (ec *EnhancedChat) GetMessages(key string, limit int) ([]*protocol.Message, error) {
+	return ec.storage.GetMessages(key, limit)
+}
+
 func (ec *EnhancedChat) ListRooms() {
 	ec.mu.RLock()
 	defer ec.mu.RUnlock()
@@ -169,18 +184,9 @@ func (ec *EnhancedChat) ListUsers() {
 	}
 }
 
-func (ec *EnhancedChat) SearchMessages(query string) {
-	messages, err := ec.storage.SearchMessages(query, "room:"+ec.currentRoom)
-	if err != nil {
-		fmt.Printf("Search error: %v\n", err)
-		return
-	}
-	
-	fmt.Printf("🔍 Search results for '%s':\n", query)
-	for _, msg := range messages {
-		timestamp := msg.Timestamp.Format("15:04:05")
-		fmt.Printf("[%s] %s: %s\n", timestamp, msg.From, msg.Content)
-	}
+// SearchMessages searches for messages
+func (ec *EnhancedChat) SearchMessages(query string, roomKey string) ([]*protocol.Message, error) {
+	return ec.storage.SearchMessages(query, roomKey)
 }
 
 func (ec *EnhancedChat) ProcessIncomingMessage(data string) {
@@ -310,9 +316,19 @@ func (ec *EnhancedChat) handleCommand(input string) bool {
 		ec.ListUsers()
 	case "search":
 		if len(args) > 0 {
-			ec.SearchMessages(strings.Join(args, " "))
+			query := strings.Join(args, " ")
+			messages, err := ec.SearchMessages(query, "room:"+ec.currentRoom)
+			if err != nil {
+				fmt.Printf("search error: %v\n", err)
+			} else {
+				fmt.Printf("🔍 search results for '%s':\n", query)
+				for _, msg := range messages {
+					timestamp := msg.Timestamp.Format("15:04:05")
+					fmt.Printf("[%s] %s: %s\n", timestamp, msg.From, msg.Content)
+				}
+			}
 		} else {
-			fmt.Println("Usage: /search <query>")
+			fmt.Println("usage: /search <query>")
 		}
 	case "private", "pm":
 		if len(args) >= 2 {

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"p2p-chat-app/internal/blockchain"
 	"p2p-chat-app/internal/chat"
 	"p2p-chat-app/internal/discovery"
 	"p2p-chat-app/internal/identity"
@@ -19,6 +20,7 @@ type EnhancedP2PNetwork struct {
 	mu          sync.RWMutex
 	chat        *chat.EnhancedChat
 	discovery   *discovery.DiscoveryService
+	blockchain  *blockchain.Blockchain
 	listener    net.Listener
 	running     bool
 }
@@ -50,6 +52,10 @@ func NewEnhancedP2PNetwork(userIdentity *identity.Identity) *EnhancedP2PNetwork 
 
 func (n *EnhancedP2PNetwork) SetChat(chat *chat.EnhancedChat) {
 	n.chat = chat
+}
+
+func (n *EnhancedP2PNetwork) SetBlockchain(bc *blockchain.Blockchain) {
+	n.blockchain = bc
 }
 
 func (n *EnhancedP2PNetwork) Start() error {
